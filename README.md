@@ -129,7 +129,7 @@ Upload a PDF contract and the app returns:
 
 Portfolio: [@ifiecas](https:ifiecas.com)
 
-Project Link: [A Private Contract Analyzer That Never Shares Your Data](https://github.com/ifiecas/contract-analyzer](https://ifiecas.com/2025/12/19/a-private-contract-analyzer-that-never-shares-your-data/)
+Project Link: (A Private Contract Analyzer That Never Shares Your Data](https://ifiecas.com/2025/12/19/a-private-contract-analyzer-that-never-shares-your-data/)
 
 ---
 
