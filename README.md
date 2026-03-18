@@ -1,123 +1,114 @@
-# 🔒 Local Contract Analyzer
+# ◈ Local Contract Analyzer
 
-A privacy-first contract analysis tool that runs 100% offline using Microsoft Foundry Local. Analyze sensitive contracts and legal documents without ever uploading your data to the cloud.
+A privacy-first contract analysis tool that runs 100% offline using Microsoft Foundry Local. Upload a PDF contract and get a plain-English breakdown — risk level, red flags, key terms, important dates, and questions to ask before signing. Nothing ever leaves your device.
 
 ## 🎯 Overview
 
-This project demonstrates how to build a private AI-powered contract analyzer using Foundry Local. All processing happens on your local machine—no internet connection required, no data sent to external servers, and no information used for model training.
+This project demonstrates how to build a private AI-powered contract analyzer using Foundry Local. All processing happens on your local machine — no internet connection required after setup, no data sent to external servers, and no information used for model training.
 
 ## ✨ Features
 
 - **100% Private**: All data stays on your device
-- **Offline Operation**: No internet connection required
-- **Lightweight**: Runs on CPU using the qwen2.5-0.5b model
-- **Fast Analysis**: Quick contract review and insights
+- **Offline Operation**: No internet required after initial model download
+- **PDF Support**: Upload contracts directly as PDF files
+- **Structured Analysis**: Risk banner, red flags, key terms, dates, numbers, recommendation, and questions to ask
 - **No Data Training**: Your contracts are never used to train AI models
-- **Cross-Platform**: Works on Mac, Windows, and Linux
+- **Clean UI**: Minimal, demo-ready interface
+
+## 🛠️ Tech Stack
+
+- **Foundry Local**: Microsoft's local AI runtime (OpenAI-compatible API)
+- **phi-4-mini**: Fast, lightweight model optimised for document analysis
+- **Streamlit**: Web application frontend
+- **pymupdf (fitz)**: PDF parsing
+- **Python**: Application runtime
+
+## 💻 Hardware Requirements
+
+- Apple Silicon Mac (M1 or later) or equivalent
+- 16GB unified memory recommended
+- At least 5GB free disk space
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### 1. Install Foundry Local
 
-- Python 3.8+
-- pip
-- At least 4GB RAM
-- 2GB free disk space
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/ifiecas/contract-analyzer.git
-   cd contract-analyzer
-   ```
-
-2. **Install Foundry Local**
-   ```bash
-   pip install foundry-local
-   ```
-
-3. **Download the model**
-   ```bash
-   foundry-local download qwen2.5-0.5b
-   ```
-
-4. **Install project dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-### Usage
-
-1. **Start the local model server**
-   ```bash
-   foundry-local serve qwen2.5-0.5b
-   ```
-
-2. **Run the analyzer**
-   ```bash
-   streamlit run app.py
-   ```
-
-3. **Upload your contract** and get instant analysis including:
-   - Key terms identification
-   - Obligation extraction
-   - Risk assessment
-   - Summary generation
-
-## 📋 Example Analysis
-
+```bash
+# macOS
+brew tap microsoft/foundrylocal
+brew install foundrylocal
 ```
-Contract Type: Service Agreement
-Parties: Company A, Vendor B
-Term: 24 months
 
-Key Obligations:
-- Monthly service delivery by 1st of each month
-- Payment within 30 days of invoice
-- 90-day termination notice required
+### 2. Download the model *(requires internet — one time only)*
 
-Potential Risks:
-- No liability cap specified
-- Broad indemnification clause
-- Auto-renewal without notice period
+```bash
+foundry model run phi-4-mini
 ```
+
+Wait until you see the service is running ✅. After this, the model is cached locally and works fully offline.
+
+### 3. Clone the repository
+
+```bash
+git clone https://github.com/ifiecas/contract-analyzer.git
+cd contract-analyzer
+```
+
+### 4. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+## ▶️ Running the App
+
+**Step 1 — Start the model** *(in Terminal)*
+```bash
+foundry model run phi-4-mini
+```
+
+**Step 2 — Launch the app** *(in a new Terminal tab)*
+```bash
+cd /Users/ifiecas/contract-analyzer && bash start.sh
+```
+
+Two commands. That's the entire setup.
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────┐
-│   Your Mac  │
-│             │
-│  ┌───────┐  │
-│  │ Model │  │  ← qwen2.5-0.5b runs locally
-│  └───────┘  │
-│      ↕       │
-│  ┌───────┐  │
-│  │  App  │  │  ← Contract analyzer
-│  └───────┘  │
-└─────────────┘
-     ↕
- Your Contract
- (Never leaves
-  your device)
+┌─────────────────────────────┐
+│        Your Machine         │
+│                             │
+│  ┌─────────────────────┐   │
+│  │   Foundry Local      │   │  ← Serves phi-4-mini locally
+│  │  (localhost API)     │   │  ← OpenAI-compatible endpoint
+│  └─────────────────────┘   │
+│            ↕                │
+│  ┌─────────────────────┐   │
+│  │  Contract Analyzer   │   │  ← Streamlit frontend
+│  │     (app.py)         │   │
+│  └─────────────────────┘   │
+└─────────────────────────────┘
+         ↕
+   Your PDF Contract
+   (Never leaves your device)
 ```
 
-## 🔧 Configuration
+## 📋 What You Get
 
-Edit `config.json` to customize:
+Upload a PDF contract and the app returns:
 
-```json
-{
-  "model": "qwen2.5-0.5b",
-  "port": 8000,
-  "maxTokens": 2048,
-  "temperature": 0.7,
-  "analysisDepth": "detailed"
-}
-```
+- **Risk Level** → High / Medium / Low with a plain-English summary
+- **What is this contract** → 2-3 sentence overview
+- **Who is involved** → Parties and their obligations
+- **Red Flags** → Issues ranked by severity with suggestions
+- **Terms Explained** → Legal jargon in plain English
+- **Key Dates & Numbers** → Important figures at a glance
+- **Recommendation** → Sign, negotiate, or avoid
+- **Questions to Ask** → Before you sign
 
-## 📊 Supported Contract Types
+## 📄 Supported Contract Types
 
 - Employment agreements
 - Service contracts
@@ -129,18 +120,10 @@ Edit `config.json` to customize:
 
 ## 🔐 Privacy & Security
 
-- **No Cloud Processing**: Everything runs locally
+- **No Cloud Processing**: Everything runs locally on your machine
 - **No Telemetry**: No usage data collected
 - **No Model Training**: Your data never trains the AI
-- **Encrypted Storage**: Optional encryption for saved analyses
-- **Audit Trail**: Full transparency of data processing
-
-## 🛠️ Tech Stack
-
-- **Foundry Local**: Local AI model runtime
-- **qwen2.5-0.5b**: Lightweight language model
-- **Streamlit**: Web application framework
-- **Python**: Application runtime and model serving
+- **Offline After Setup**: Internet only needed for first-time model download
 
 ## 📧 Contact
 
@@ -150,6 +133,6 @@ Project Link: [https://github.com/ifiecas/contract-analyzer](https://github.com/
 
 ---
 
-**⚠️ Disclaimer**: This project is a demonstration of Foundry Local's capabilities for running AI models privately on your local machine. It is intended for educational and experimental purposes only. 
+**⚠️ Disclaimer**: This tool is intended for educational and experimental purposes only and is a demonstration of Foundry Local's capabilities for running AI models privately on your local machine.
 
-**This tool does not provide legal advice.** The contract analysis generated by this application should not be relied upon for legal decisions. Always consult with a qualified attorney or legal professional for advice on contracts, legal documents, or any legal matters. The author assumes no liability for any decisions made based on the output of this tool.
+**This tool does not provide legal advice.** The analysis generated by this application should not be relied upon for legal decisions. Always consult a qualified attorney or legal professional for advice on contracts or any legal matters. The author assumes no liability for any decisions made based on the output of this tool.
