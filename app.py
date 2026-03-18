@@ -1,493 +1,479 @@
 import streamlit as st
-import requests
-from pypdf import PdfReader
-from docx import Document
-import io
+from openai import OpenAI
+import subprocess, re, socket, json
 
-# Modern Professional Theme Configuration
 st.set_page_config(
-    page_title="Contract Analyzer Pro",
-    page_icon="⚖️",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Contract Analyzer",
+    page_icon="◈",
+    layout="centered",
+    initial_sidebar_state="collapsed",
 )
 
-# Custom CSS for modern, professional look
 st.markdown("""
 <style>
-    /* Main theme colors */
-    :root {
-        --primary-color: #2E3440;
-        --secondary-color: #5E81AC;
-        --accent-color: #88C0D0;
-        --success-color: #A3BE8C;
-        --warning-color: #EBCB8B;
-        --danger-color: #BF616A;
-        --bg-color: #ECEFF4;
-    }
-    
-    /* Header styling */
-    .main-header {
-        background: linear-gradient(135deg, #2E3440 0%, #3B4252 100%);
-        padding: 2rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .main-title {
-        color: #ECEFF4;
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        letter-spacing: -0.5px;
-    }
-    
-    .main-subtitle {
-        color: #88C0D0;
-        font-size: 1.1rem;
-        font-weight: 400;
-    }
-    
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background-color: #2E3440;
-    }
-    
-    [data-testid="stSidebar"] .element-container {
-        color: #ECEFF4;
-    }
-    
-    /* Button styling */
-    .stButton>button {
-        background: linear-gradient(135deg, #5E81AC 0%, #81A1C1 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.75rem 2rem;
-        font-weight: 600;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #81A1C1 0%, #5E81AC 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-    
-    /* Tab styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: transparent;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background-color: #E5E9F0;
-        border-radius: 8px 8px 0 0;
-        padding: 12px 24px;
-        font-weight: 600;
-        color: #2E3440;
-        border: none;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #5E81AC 0%, #81A1C1 100%);
-        color: white;
-    }
-    
-    /* Info boxes */
-    .stAlert {
-        border-radius: 8px;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-    
-    /* Cards */
-    .feature-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        margin-bottom: 1rem;
-        border-left: 4px solid #5E81AC;
-    }
-    
-    .feature-title {
-        color: #2E3440;
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-    }
-    
-    .feature-text {
-        color: #4C566A;
-        font-size: 0.95rem;
-        line-height: 1.6;
-    }
-    
-    /* Status indicators */
-    .status-connected {
-        color: #A3BE8C;
-        font-weight: 600;
-    }
-    
-    .status-error {
-        color: #BF616A;
-        font-weight: 600;
-    }
-    
-    /* Expander */
-    .streamlit-expanderHeader {
-        background-color: #E5E9F0;
-        border-radius: 8px;
-        font-weight: 600;
-        color: #2E3440;
-    }
-    
-    /* File uploader */
-    [data-testid="stFileUploader"] {
-        background-color: #E5E9F0;
-        border-radius: 10px;
-        padding: 1rem;
-    }
-    
-    /* Divider */
-    hr {
-        margin: 2rem 0;
-        border: none;
-        border-top: 2px solid #E5E9F0;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@300;400&family=Lato:wght@300;400;700&display=swap');
+
+:root {
+    --bg:          #FAFAF8;
+    --surface:     #FFFFFF;
+    --border:      #E8E5DF;
+    --text:        #1C1C1A;
+    --muted:       #7A7A75;
+    --accent:      #5C4A32;
+    --red-bg:      #FDF2F2;
+    --red-bd:      #E53E3E;
+    --amber-bg:    #FFFBF0;
+    --amber-bd:    #D97706;
+    --green-bg:    #F0FDF6;
+    --green-bd:    #16A34A;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, [data-testid="stAppViewContainer"] {
+    background: var(--bg) !important;
+    font-family: 'Lato', sans-serif;
+    color: var(--text);
+}
+[data-testid="stHeader"] { display: none !important; }
+[data-testid="stSidebar"] { display: none !important; }
+#MainMenu, footer, header, .stDeployButton { display: none !important; }
+
+.main .block-container {
+    max-width: 700px !important;
+    margin: 0 auto !important;
+    padding: 5rem 1.5rem 8rem !important;
+}
+
+/* Nav */
+.nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5rem;
+}
+.nav-brand {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+.nav-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.3rem 0.8rem;
+}
+
+/* Hero */
+.hero { margin-bottom: 3.5rem; }
+.hero h1 {
+    font-family: 'Lora', serif;
+    font-size: 2.5rem;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 1rem;
+}
+.hero h1 em { font-style: italic; color: var(--accent); }
+.hero p {
+    font-size: 1rem;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+/* Upload */
+[data-testid="stFileUploader"] {
+    background: var(--surface) !important;
+    border: 1.5px dashed var(--border) !important;
+    border-radius: 8px !important;
+    padding: 2rem 1.5rem !important;
+}
+[data-testid="stFileUploader"] label {
+    font-family: 'IBM Plex Mono', monospace !important;
+    font-size: 0.62rem !important;
+    letter-spacing: 0.18em !important;
+    text-transform: uppercase !important;
+    color: var(--accent) !important;
+}
+[data-testid="stFileUploaderDropzone"] { background: transparent !important; border: none !important; }
+[data-testid="stFileUploaderDropzoneInstructions"] p {
+    font-size: 0.85rem !important;
+    color: var(--muted) !important;
+    font-weight: 300 !important;
+}
+
+/* Selectbox */
+.stSelectbox > div > div {
+    font-size: 0.85rem !important;
+    background: var(--surface) !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: 6px !important;
+    color: var(--text) !important;
+}
+.stSelectbox label {
+    font-family: 'IBM Plex Mono', monospace !important;
+    font-size: 0.62rem !important;
+    letter-spacing: 0.18em !important;
+    text-transform: uppercase !important;
+    color: var(--accent) !important;
+}
+
+/* Button */
+.stButton > button {
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    background: var(--text) !important;
+    color: var(--bg) !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 0.85rem 2rem !important;
+    width: 100% !important;
+    transition: opacity 0.2s !important;
+}
+.stButton > button:hover { opacity: 0.75 !important; }
+
+.rule { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+
+/* Risk banner */
+.risk-banner {
+    border-radius: 8px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 3rem;
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+.risk-banner.high   { background: var(--red-bg);   border-left: 4px solid var(--red-bd);   }
+.risk-banner.medium { background: var(--amber-bg); border-left: 4px solid var(--amber-bd); }
+.risk-banner.low    { background: var(--green-bg); border-left: 4px solid var(--green-bd); }
+.risk-icon { font-size: 1.5rem; }
+.risk-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+}
+.risk-banner.high   .risk-label { color: var(--red-bd);   }
+.risk-banner.medium .risk-label { color: var(--amber-bd); }
+.risk-banner.low    .risk-label { color: var(--green-bd); }
+.risk-text {
+    font-family: 'Lora', serif;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--text);
+}
+
+/* Section */
+.section { margin-bottom: 3rem; }
+.section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Summary */
+.summary-text {
+    font-family: 'Lora', serif;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--text);
+}
+
+/* Parties */
+.party { padding: 1rem 0; border-bottom: 1px solid var(--border); }
+.party:last-child { border-bottom: none; }
+.party-name { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 0.1rem; }
+.party-role {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+}
+.party-obligations { font-size: 0.88rem; font-weight: 300; color: #3A3A38; line-height: 1.65; }
+
+/* Terms */
+.term { display: grid; grid-template-columns: 160px 1fr; gap: 1.25rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border); align-items: baseline; }
+.term:last-child { border-bottom: none; }
+.term-name { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+.term-detail { font-size: 0.88rem; font-weight: 300; color: #3A3A38; line-height: 1.65; }
+
+/* Flags */
+.flag { border-radius: 6px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+.flag.high   { background: var(--red-bg);   border-left: 3px solid var(--red-bd);   }
+.flag.medium { background: var(--amber-bg); border-left: 3px solid var(--amber-bd); }
+.flag.low    { background: var(--green-bg); border-left: 3px solid var(--green-bd); }
+.flag-severity {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.56rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+.flag.high   .flag-severity { color: var(--red-bd);   }
+.flag.medium .flag-severity { color: var(--amber-bd); }
+.flag.low    .flag-severity { color: var(--green-bd); }
+.flag-issue { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 0.2rem; }
+.flag-clause { font-family: 'IBM Plex Mono', monospace; font-size: 0.73rem; color: var(--muted); margin-bottom: 0.4rem; }
+.flag-suggestion { font-size: 0.85rem; font-weight: 300; color: #3A3A38; line-height: 1.6; }
+.flag-suggestion b { font-weight: 700; color: var(--text); }
+
+/* Data rows */
+.data-row { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 1rem; }
+.data-row:last-child { border-bottom: none; }
+.data-label { font-size: 0.88rem; font-weight: 300; color: var(--muted); }
+.data-value { font-size: 0.88rem; font-weight: 700; color: var(--text); text-align: right; }
+
+/* Recommendation */
+.rec-box { background: var(--text); border-radius: 8px; padding: 1.75rem 2rem; margin-bottom: 3rem; }
+.rec-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #888882;
+    margin-bottom: 0.75rem;
+}
+.rec-text { font-family: 'Lora', serif; font-size: 1.05rem; line-height: 1.75; color: var(--bg); }
+
+/* Questions */
+.question { display: flex; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.question:last-child { border-bottom: none; }
+.q-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--accent);
+    min-width: 22px;
+    margin-top: 0.15rem;
+}
+.q-text { font-size: 0.9rem; font-weight: 400; color: var(--text); line-height: 1.6; }
+
+/* Footer */
+.footer { margin-top: 5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
+.footer span { font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
 </style>
 """, unsafe_allow_html=True)
 
-# Header
+# ── Port detection ─────────────────────────────────────────────────────────────
+def find_foundry_port():
+    try:
+        result = subprocess.run(["foundry", "service", "status"], capture_output=True, text=True, timeout=5)
+        match = re.search(r'http://127\.0\.0\.1:(\d+)', result.stdout + result.stderr)
+        if match:
+            return int(match.group(1))
+    except Exception:
+        pass
+    for port in [52657, 50934, 51000, 51234, 52000]:
+        try:
+            s = socket.create_connection(("127.0.0.1", port), timeout=0.5)
+            s.close()
+            return port
+        except Exception:
+            continue
+    return 50934
+
+@st.cache_resource
+def get_client():
+    port = find_foundry_port()
+    return OpenAI(base_url=f"http://127.0.0.1:{port}/v1", api_key="foundry"), port
+
+SYSTEM_PROMPT = """You are a contract analyst helping everyday people understand contracts before signing.
+
+Analyze the contract and respond ONLY with a valid JSON object — no markdown, no extra text, just raw JSON:
+
+{
+  "risk_level": "high|medium|low",
+  "risk_summary": "One clear sentence summarising the overall risk",
+  "summary": "2-3 plain-English sentences: what is this contract, who are the parties, what is the main purpose",
+  "parties": [
+    {"name": "Party name", "role": "e.g. Employer / Employee / Landlord / Tenant", "obligations": "Plain English: what they must do"}
+  ],
+  "key_terms": [
+    {"term": "Legal term or clause name", "detail": "Plain English explanation relevant to the signer"}
+  ],
+  "red_flags": [
+    {"severity": "high|medium|low", "issue": "Short title", "clause": "Brief quote or clause reference", "suggestion": "What to negotiate or watch out for"}
+  ],
+  "key_dates": [{"label": "What this date is", "value": "Date or duration"}],
+  "key_numbers": [{"label": "What this figure is", "value": "Amount or figure"}],
+  "recommendation": "2-3 sentences: sign as-is, negotiate, or avoid — and the most important reason",
+  "questions_to_ask": ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]
+}
+
+Be specific, plain, and focus on what matters most to someone signing this for the first time. Return ONLY valid JSON."""
+
+MODEL = "Phi-4-mini-instruct-generic-gpu:5"
+
+# ── UI ─────────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div class="main-header">
-    <div class="main-title">⚖️ Contract Analyzer Pro</div>
-    <div class="main-subtitle">🔒 Private AI-Powered Contract Analysis | 100% Local & Secure</div>
+<div class="nav">
+    <span class="nav-brand">◈ Contract Analyzer</span>
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span class="nav-pill">Local · Private · Offline</span>
+        <span class="nav-pill">🤖 Phi-4-mini</span>
+    </div>
+</div>
+<div class="hero">
+    <h1>Understand what<br>you're <em>signing.</em></h1>
+    <p>Upload your contract for a plain-English breakdown — fully offline. Nothing leaves your device.</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Foundry Local API endpoint - CORRECTED
-FOUNDRY_API = "http://127.0.0.1:50390/v1/chat/completions"
-MODEL_NAME = "qwen2.5-0.5b-instruct-generic-gpu:4"
+try:
+    import fitz
+    file_types = ["pdf", "txt", "md"]
+except ImportError:
+    file_types = ["txt", "md"]
 
-# Function to call Foundry Local API
-def call_foundry_api(prompt):
-    try:
-        response = requests.post(
-            FOUNDRY_API,
-            json={
-                "model": MODEL_NAME,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 1000,
-                "temperature": 0.7
-            },
-            timeout=120
-        )
-        response.raise_for_status()
-        result = response.json()
-        # Extract content from the response
-        if "choices" in result and len(result["choices"]) > 0:
-            return result["choices"][0]["message"]["content"]
-        else:
-            return "No response from model"
-    except requests.exceptions.HTTPError as e:
-        return f"❌ API Error: {e}\n\nResponse: {response.text if response else 'No response'}"
-    except Exception as e:
-        return f"❌ Error: {str(e)}\n\nMake sure the model is loaded with: foundry model load qwen2.5-0.5b"
+uploaded_file = st.file_uploader("Upload your contract", type=file_types, label_visibility="collapsed")
 
-# Function to extract text from PDF
-def extract_pdf_text(file):
-    try:
-        pdf = PdfReader(io.BytesIO(file.read()))
-        text = ""
-        for page in pdf.pages:
-            text += page.extract_text()
-        return text
-    except Exception as e:
-        return f"Error reading PDF: {str(e)}"
-
-# Function to extract text from DOCX
-def extract_docx_text(file):
-    try:
-        doc = Document(io.BytesIO(file.read()))
-        text = "\n".join([para.text for para in doc.paragraphs])
-        return text
-    except Exception as e:
-        return f"Error reading DOCX: {str(e)}"
-
-# Function to analyze contract
-def analyze_contract(contract_text, analysis_type):
-    contract_snippet = contract_text[:3500]
-    
-    prompts = {
-        "risks": f"""Analyze this contract and identify potential risks and concerning clauses. Focus on:
-- Non-compete clauses
-- Liability terms
-- Termination conditions
-- Auto-renewal terms
-- Hidden fees
-- One-sided terms
-
-Contract:
-{contract_snippet}
-
-List the top 5-7 risks clearly and concisely:""",
-        
-        "questions": f"""Based on this contract, generate important questions to ask a lawyer before signing. Focus on:
-- Ambiguous terms needing clarification
-- Areas for negotiation
-- Missing protections
-- Unusual provisions
-
-Contract:
-{contract_snippet}
-
-Generate 7-10 specific, actionable questions:""",
-        
-        "benefits": f"""Analyze this contract and explain the benefits and rights you receive. Include:
-- Your rights and entitlements
-- What you're getting from this agreement
-- Protections in your favor
-- Payment or compensation terms
-
-Contract:
-{contract_snippet}
-
-List your key benefits clearly:""",
-        
-        "summary": f"""Translate this contract into plain English. Explain:
-- Main purpose and who the parties are
-- Key obligations for each party
-- Important terms and conditions
-- Duration and how to terminate
-
-Contract:
-{contract_snippet}
-
-Provide a clear, easy-to-understand summary:"""
-    }
-    
-    return call_foundry_api(prompts[analysis_type])
-
-# Test API connection
-def test_api_connection():
-    try:
-        response = requests.post(
-            FOUNDRY_API,
-            json={
-                "model": MODEL_NAME,
-                "messages": [{"role": "user", "content": "test"}],
-                "max_tokens": 5
-            },
-            timeout=5
-        )
-        return response.status_code == 200
-    except:
-        return False
-
-# Sidebar
-with st.sidebar:
-    st.markdown("### 📁 Upload Document")
-    
-    # API Status
-    if test_api_connection():
-        st.markdown('<p class="status-connected">● Connected to Foundry Local</p>', unsafe_allow_html=True)
-    else:
-        st.markdown('<p class="status-error">● Not Connected</p>', unsafe_allow_html=True)
-        st.warning("⚠️ Model not loaded!\n\nRun: `foundry model load qwen2.5-0.5b`")
-    
-    st.markdown("---")
-    
-    uploaded_file = st.file_uploader(
-        "Choose a contract file",
-        type=["pdf", "docx"],
-        help="Your document is processed locally and never leaves your computer"
-    )
-    
-    st.markdown("---")
-    
-    st.markdown("### 🔒 Privacy First")
-    st.caption("✓ 100% local processing")
-    st.caption("✓ No cloud uploads")
-    st.caption("✓ No data retention")
-    st.caption("✓ Completely private")
-    
-    st.markdown("---")
-    
-    st.markdown("### 🤖 AI Model")
-    st.caption(f"Model: qwen2.5-0.5b")
-    st.caption("Provider: Foundry Local")
-    
-    with st.expander("⚙️ Settings"):
-        st.code(f"API: {FOUNDRY_API}")
-        st.code(f"Model: {MODEL_NAME}")
-        st.code(f"Status: {'Online' if test_api_connection() else 'Offline'}")
-
-# Main content
+contract_text = ""
 if uploaded_file:
-    # Extract text
-    with st.spinner("📖 Reading document..."):
-        if uploaded_file.name.endswith(".pdf"):
-            contract_text = extract_pdf_text(uploaded_file)
-        else:
-            contract_text = extract_docx_text(uploaded_file)
-    
-    if contract_text and not contract_text.startswith("Error"):
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.success(f"✅ **{uploaded_file.name}** loaded successfully")
-        with col2:
-            st.info(f"📊 {len(contract_text):,} characters")
-        
-        # Preview
-        with st.expander("📄 Document Preview"):
-            st.text_area("First 2000 characters", contract_text[:2000], height=200, disabled=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # Analysis tabs
-        tab1, tab2, tab3, tab4 = st.tabs([
-            "🚨 Risk Assessment",
-            "❓ Questions for Lawyer",
-            "✅ Your Benefits",
-            "📋 Plain English"
-        ])
-        
-        with tab1:
-            st.markdown("#### 🚨 Identify Potential Risks")
-            st.caption("Analyze concerning clauses and unfavorable terms")
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            if st.button("▶️ Analyze Risks", key="risks_btn", use_container_width=True):
-                with st.spinner("🔍 Analyzing... Please wait (may take 30-60 seconds)"):
-                    result = analyze_contract(contract_text, "risks")
-                    st.markdown("---")
-                    st.markdown(result)
-        
-        with tab2:
-            st.markdown("#### ❓ Questions for Your Attorney")
-            st.caption("Important questions to discuss before signing")
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            if st.button("▶️ Generate Questions", key="questions_btn", use_container_width=True):
-                with st.spinner("🔍 Generating questions..."):
-                    result = analyze_contract(contract_text, "questions")
-                    st.markdown("---")
-                    st.markdown(result)
-        
-        with tab3:
-            st.markdown("#### ✅ Your Rights & Benefits")
-            st.caption("What you're getting from this agreement")
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            if st.button("▶️ Analyze Benefits", key="benefits_btn", use_container_width=True):
-                with st.spinner("🔍 Analyzing benefits..."):
-                    result = analyze_contract(contract_text, "benefits")
-                    st.markdown("---")
-                    st.markdown(result)
-        
-        with tab4:
-            st.markdown("#### 📋 Simple Summary")
-            st.caption("Contract explained in plain language")
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            if st.button("▶️ Create Summary", key="summary_btn", use_container_width=True):
-                with st.spinner("🔍 Summarizing..."):
-                    result = analyze_contract(contract_text, "summary")
-                    st.markdown("---")
-                    st.markdown(result)
+    if uploaded_file.type == "application/pdf":
+        try:
+            import fitz
+            doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+            contract_text = "".join(page.get_text() for page in doc)
+            num_pages = len(doc)
+            doc.close()
+            st.success(f"✓ {uploaded_file.name}  ·  {num_pages} page{'s' if num_pages != 1 else ''}")
+        except Exception as e:
+            st.error(f"Could not read PDF: {e}")
     else:
-        st.error(contract_text)
+        contract_text = uploaded_file.read().decode("utf-8")
+        st.success(f"✓ {uploaded_file.name}")
 
-else:
-    # Welcome screen with feature cards
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-title">🚨 Risk Assessment</div>
-            <div class="feature-text">
-                Identify concerning clauses, hidden fees, and unfavorable terms 
-                that could put you at risk.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-title">✅ Benefits Analysis</div>
-            <div class="feature-text">
-                Understand your rights, entitlements, and what you're gaining 
-                from the agreement.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-title">❓ Legal Questions</div>
-            <div class="feature-text">
-                Generate specific questions to ask your attorney before signing 
-                any contract.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-title">📋 Plain English</div>
-            <div class="feature-text">
-                Translate complex legal language into simple, understandable 
-                terms anyone can grasp.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Use cases
-    st.markdown("### 💼 Perfect For")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("**📄 Employment**")
-        st.caption("• Job offers")
-        st.caption("• Promotion letters")
-        st.caption("• Severance packages")
-    
-    with col2:
-        st.markdown("**🏢 Business**")
-        st.caption("• Service agreements")
-        st.caption("• Vendor contracts")
-        st.caption("• Partnership deals")
-    
-    with col3:
-        st.markdown("**🏠 Personal**")
-        st.caption("• Rental leases")
-        st.caption("• Purchase agreements")
-        st.caption("• NDAs")
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.divider()
-    
-    # Legal disclaimer
-    st.warning("""
-    **⚖️ Important Legal Disclaimer**
-    
-    This tool provides AI-assisted contract analysis to help you better understand 
-    legal documents. However, it does **not** constitute legal advice and cannot 
-    replace consultation with a qualified attorney. Always seek professional legal 
-    counsel for important contracts and legal matters.
-    """)
+st.markdown("<br>", unsafe_allow_html=True)
+analyze = st.button("Analyze →")
 
-# Footer
-st.sidebar.divider()
-st.sidebar.caption("🔒 Powered by Foundry Local")
-st.sidebar.caption(f"⚡ qwen2.5-0.5b (GPU-accelerated)")
-st.sidebar.caption("⚖️ Not legal advice")
+# ── Output ─────────────────────────────────────────────────────────────────────
+if analyze:
+    if not contract_text.strip():
+        st.warning("Please upload a contract file first.")
+    else:
+        st.markdown('<hr class="rule">', unsafe_allow_html=True)
+        client, port = get_client()
+
+        with st.spinner("Reading your contract..."):
+            try:
+                response = client.chat.completions.create(
+                    model=MODEL,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": f"Analyze this contract:\n\n{contract_text}"}
+                    ],
+                    temperature=0.2,
+                    max_tokens=2048,
+                )
+                raw = response.choices[0].message.content
+                raw = re.sub(r'^```json\s*', '', raw.strip())
+                raw = re.sub(r'^```\s*', '', raw.strip())
+                raw = re.sub(r'\s*```$', '', raw.strip())
+                data = json.loads(raw)
+
+                risk = data.get("risk_level", "medium").lower()
+                icons  = {"high": "🔴", "medium": "🟡", "low": "🟢"}
+                labels = {"high": "High Risk — Review carefully before signing", "medium": "Medium Risk — Some points to clarify first", "low": "Low Risk — Looks reasonable"}
+
+                st.markdown(f"""
+                <div class="risk-banner {risk}">
+                    <div class="risk-icon">{icons.get(risk,'🟡')}</div>
+                    <div>
+                        <div class="risk-label">{labels.get(risk,'')}</div>
+                        <div class="risk-text">{data.get('risk_summary','')}</div>
+                    </div>
+                </div>""", unsafe_allow_html=True)
+
+                # What is this contract
+                st.markdown(f"""
+                <div class="section">
+                    <div class="section-label">What is this contract</div>
+                    <div class="summary-text">{data.get('summary','')}</div>
+                </div>""", unsafe_allow_html=True)
+
+                # Who is involved
+                parties = data.get("parties", [])
+                if parties:
+                    p_html = "".join([f"""<div class="party">
+                        <div class="party-name">{p.get('name','')}</div>
+                        <div class="party-role">{p.get('role','')}</div>
+                        <div class="party-obligations">{p.get('obligations','')}</div>
+                    </div>""" for p in parties])
+                    st.markdown(f"""<div class="section"><div class="section-label">Who is involved</div>{p_html}</div>""", unsafe_allow_html=True)
+
+                # Red flags
+                flags = data.get("red_flags", [])
+                if flags:
+                    f_html = "".join([f"""<div class="flag {f.get('severity','medium').lower()}">
+                        <div class="flag-severity">{f.get('severity','').upper()} RISK</div>
+                        <div class="flag-issue">{f.get('issue','')}</div>
+                        <div class="flag-clause">{f.get('clause','')}</div>
+                        <div class="flag-suggestion"><b>What to do:</b> {f.get('suggestion','')}</div>
+                    </div>""" for f in flags])
+                    st.markdown(f"""<div class="section"><div class="section-label">Red flags</div>{f_html}</div>""", unsafe_allow_html=True)
+
+                # Terms explained
+                terms = data.get("key_terms", [])
+                if terms:
+                    t_html = "".join([f"""<div class="term">
+                        <div class="term-name">{t.get('term','')}</div>
+                        <div class="term-detail">{t.get('detail','')}</div>
+                    </div>""" for t in terms])
+                    st.markdown(f"""<div class="section"><div class="section-label">Terms explained</div>{t_html}</div>""", unsafe_allow_html=True)
+
+                # Dates & numbers
+                dates   = data.get("key_dates", [])
+                numbers = data.get("key_numbers", [])
+                all_data = [(d.get('label',''), d.get('value','')) for d in dates + numbers]
+                if all_data:
+                    rows = "".join([f"""<div class="data-row">
+                        <div class="data-label">{label}</div>
+                        <div class="data-value">{value}</div>
+                    </div>""" for label, value in all_data])
+                    st.markdown(f"""<div class="section"><div class="section-label">Key dates & numbers</div>{rows}</div>""", unsafe_allow_html=True)
+
+                # Recommendation
+                st.markdown(f"""
+                <div class="rec-box">
+                    <div class="rec-label">Recommendation</div>
+                    <div class="rec-text">{data.get('recommendation','')}</div>
+                </div>""", unsafe_allow_html=True)
+
+                # Questions to ask
+                questions = data.get("questions_to_ask", [])
+                if questions:
+                    q_html = "".join([f"""<div class="question">
+                        <div class="q-num">0{i+1}</div>
+                        <div class="q-text">{q}</div>
+                    </div>""" for i, q in enumerate(questions)])
+                    st.markdown(f"""<div class="section"><div class="section-label">Ask before you sign</div>{q_html}</div>""", unsafe_allow_html=True)
+
+            except json.JSONDecodeError:
+                st.markdown(f"""<div class="section"><div class="section-label">Analysis</div><div class="summary-text">{raw}</div></div>""", unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Could not connect to Foundry Local. Make sure it's running: `foundry model run phi-4-mini`\n\nError: {str(e)}")
+
+st.markdown("""
+<div class="footer">
+    <span>All analysis runs locally</span>
+    <span>Powered by Foundry Local</span>
+</div>""", unsafe_allow_html=True)
