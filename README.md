@@ -1,6 +1,6 @@
 # ◈ Local Contract Analyzer
 
-A privacy-first contract analysis tool that runs 100% offline using Microsoft Foundry Local. Upload a PDF contract and get a plain-English breakdown — risk level, red flags, key terms, important dates, and questions to ask before signing. Nothing ever leaves your device.
+A privacy-first contract analysis tool that runs 100% offline using Microsoft Foundry Local. Upload a PDF contract and get a plain-English breakdown — risk level, red flags, key terms, important dates, and questions to ask before signing. **Nothing ever leaves your device.**
 
 ## 🎯 Overview
 
@@ -23,58 +23,98 @@ This project demonstrates how to build a private AI-powered contract analyzer us
 - **pymupdf (fitz)**: PDF parsing
 - **Python**: Application runtime
 
-## 💻 Hardware Requirements
+## 💻 Requirements
 
-- Apple Silicon Mac (M1 or later) or equivalent
-- 16GB unified memory recommended
-- At least 5GB free disk space
+- **OS**: macOS (Apple Silicon recommended), Windows 10/11, or Linux
+- **RAM**: 8GB minimum, 16GB recommended
+- **Disk**: At least 5GB free space
+- **Python**: 3.8 or higher
+- **Internet**: Required once to download the model — fully offline after that
 
 ## 🚀 Getting Started
 
 ### 1. Install Foundry Local
 
+**macOS:**
 ```bash
-# macOS
 brew tap microsoft/foundrylocal
 brew install foundrylocal
 ```
 
-### 2. Download the model *(requires internet — one time only)*
+**Windows:**
+```bash
+winget install Microsoft.FoundryLocal
+```
+
+> After installing, verify it works:
+> ```bash
+> foundry --version
+> ```
+
+---
+
+### 2. Download the model *(one-time, requires internet)*
 
 ```bash
 foundry model run phi-4-mini
 ```
 
-Wait until you see the service is running ✅. After this, the model is cached locally and works fully offline.
+Wait until you see the service is running ✅
 
-### 3. Clone the repository
+> This downloads phi-4-mini (~3.7GB) and caches it locally. You only need to do this once — after that it runs completely offline.
+
+---
+
+### 3. Clone this repository
 
 ```bash
 git clone https://github.com/ifiecas/contract-analyzer.git
 cd contract-analyzer
 ```
 
-### 4. Install dependencies
+---
+
+### 4. Set up a virtual environment *(recommended)*
+
+```bash
+python3 -m venv venv
+source venv/bin/activate      # macOS/Linux
+venv\Scripts\activate         # Windows
+```
+
+---
+
+### 5. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
+---
+
 ## ▶️ Running the App
 
-**Step 1 — Start the model** *(in Terminal)*
+Every time you want to use the app, you need two terminal tabs:
+
+**Terminal 1 — Start the AI model:**
 ```bash
 foundry model run phi-4-mini
 ```
+Wait until you see the service is running ✅
 
-**Step 2 — Launch the app** *(in a new Terminal tab)*
+**Terminal 2 — Launch the app:**
 ```bash
-cd /Users/ifiecas/contract-analyzer && bash start.sh
+cd contract-analyzer
+bash start.sh
 ```
 
-Two commands. That's the entire setup.
+Then open your browser to the local URL shown in the terminal (usually `http://localhost:8501`).
 
-## 🏗️ Architecture
+> **Two commands. That's the entire setup.**
+
+---
+
+## 🏗️ How It Works
 
 ```
 ┌─────────────────────────────┐
@@ -94,6 +134,10 @@ Two commands. That's the entire setup.
    Your PDF Contract
    (Never leaves your device)
 ```
+
+The app connects to Foundry Local via a local OpenAI-compatible API running on `localhost`. Your contract is sent to the model running on your own machine — no external servers involved.
+
+---
 
 ## 📋 What You Get
 
@@ -118,6 +162,22 @@ Upload a PDF contract and the app returns:
 - Partnership agreements
 - License agreements
 
+## 🔧 Troubleshooting
+
+**"Could not connect to Foundry Local"**
+→ Make sure `foundry model run phi-4-mini` is running in a separate terminal tab first.
+
+**"streamlit: command not found"**
+→ Use `bash start.sh` instead of calling `streamlit` directly. This activates the correct environment.
+
+**App is slow on first run**
+→ The model takes a moment to load into memory. Subsequent analyses in the same session will be faster.
+
+**Model not found**
+→ Run `foundry model list` to confirm phi-4-mini is downloaded. If not, run `foundry model run phi-4-mini` again with an internet connection.
+
+---
+
 ## 🔐 Privacy & Security
 
 - **No Cloud Processing**: Everything runs locally on your machine
@@ -125,11 +185,13 @@ Upload a PDF contract and the app returns:
 - **No Model Training**: Your data never trains the AI
 - **Offline After Setup**: Internet only needed for first-time model download
 
+---
+
 ## 📧 Contact
 
-Portfolio: [@ifiecas](https:ifiecas.com)
+**Portfolio**: [ifiecas.com](https://ifiecas.com)
 
-Project Link: (A Private Contract Analyzer That Never Shares Your Data](https://ifiecas.com/2025/12/19/a-private-contract-analyzer-that-never-shares-your-data/)
+**Blog post**: [A Private Contract Analyzer That Never Shares Your Data](https://ifiecas.com/2025/12/19/a-private-contract-analyzer-that-never-shares-your-data/)
 
 ---
 
