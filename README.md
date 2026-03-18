@@ -127,9 +127,9 @@ Upload a PDF contract and the app returns:
 
 ## 📧 Contact
 
-GitHub: [@ifiecas](https://github.com/ifiecas)
+Portfolio: [@ifiecas](https:ifiecas.com)
 
-Project Link: [https://github.com/ifiecas/contract-analyzer](https://github.com/ifiecas/contract-analyzer)
+Project Link: [A Private Contract Analyzer That Never Shares Your Data]([https://github.com/ifiecas/contract-analyzer](https://ifiecas.com/2025/12/19/a-private-contract-analyzer-that-never-shares-your-data/))
 
 ---
 
