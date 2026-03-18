@@ -45,6 +45,46 @@ html, body, [data-testid="stAppViewContainer"] {
     padding: 5rem 1.5rem 8rem !important;
 }
 
+/* Disclaimer banner */
+.disclaimer-banner {
+    background: #FFFBF0;
+    border: 1px solid #D97706;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.disclaimer-content {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+.disclaimer-icon { font-size: 1rem; margin-top: 0.1rem; }
+.disclaimer-text {
+    font-size: 0.82rem;
+    font-weight: 300;
+    color: #92400E;
+    line-height: 1.6;
+}
+.disclaimer-text b { font-weight: 700; }
+.dismiss-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: #D97706;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    white-space: nowrap;
+    margin-top: 0.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+.dismiss-btn:hover { opacity: 0.6; }
+
 /* Nav */
 .nav {
     display: flex;
@@ -108,22 +148,6 @@ html, body, [data-testid="stAppViewContainer"] {
     font-size: 0.85rem !important;
     color: var(--muted) !important;
     font-weight: 300 !important;
-}
-
-/* Selectbox */
-.stSelectbox > div > div {
-    font-size: 0.85rem !important;
-    background: var(--surface) !important;
-    border: 1.5px solid var(--border) !important;
-    border-radius: 6px !important;
-    color: var(--text) !important;
-}
-.stSelectbox label {
-    font-family: 'IBM Plex Mono', monospace !important;
-    font-size: 0.62rem !important;
-    letter-spacing: 0.18em !important;
-    text-transform: uppercase !important;
-    color: var(--accent) !important;
 }
 
 /* Button */
@@ -332,6 +356,29 @@ st.markdown("""
         <span class="nav-pill">🤖 Phi-4-mini</span>
     </div>
 </div>
+""", unsafe_allow_html=True)
+
+# ── Dismissible disclaimer banner ──────────────────────────────────────────────
+if "disclaimer_dismissed" not in st.session_state:
+    st.session_state.disclaimer_dismissed = False
+
+if not st.session_state.disclaimer_dismissed:
+    col1, col2 = st.columns([10, 1])
+    with col1:
+        st.markdown("""
+        <div style="background:#FFFBF0;border:1px solid #D97706;border-radius:8px;padding:1rem 1.25rem;margin-bottom:0.5rem;display:flex;gap:0.75rem;align-items:flex-start;">
+            <span style="font-size:1rem;margin-top:0.1rem;">⚠️</span>
+            <span style="font-size:0.82rem;font-weight:300;color:#92400E;line-height:1.6;">
+                <b>Not legal advice.</b> This tool helps you understand what you're reading — think of it as a smart friend who read the contract first. Always consult a qualified legal professional before signing anything important.
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        if st.button("✕", key="dismiss_disclaimer"):
+            st.session_state.disclaimer_dismissed = True
+            st.rerun()
+
+st.markdown("""
 <div class="hero">
     <h1>Understand what<br>you're <em>signing.</em></h1>
     <p>Upload your contract for a plain-English breakdown — fully offline. Nothing leaves your device.</p>
